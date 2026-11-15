@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791590624593,
+      "tag": "0000_import_report_advisor_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791590689463,
+      "tag": "0001_self_service_company_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794187167700,
+      "tag": "0002_universal_analysis_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794278041341,
+      "tag": "0003_import_create_job_with_source_file",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794430443269,
+      "tag": "0004_report_execution_task_identity",
+      "breakpoints": true
+    }
+  ]
+}
