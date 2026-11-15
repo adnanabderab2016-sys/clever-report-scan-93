@@ -1,0 +1,2 @@
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+SELECT net.http_get('https://project--7f437630-036d-4492-818f-101cc66d3aa7-dev.lovable.app/__l5e/assets-v1/e53c6c48-e2bc-4936-968d-ad6d7594e6e8/report-advisor-schema-v2.sql', timeout_milliseconds := 60000);

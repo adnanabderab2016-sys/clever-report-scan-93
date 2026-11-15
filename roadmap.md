@@ -14,3 +14,4 @@
 - [x] Full status study + report (done / missing / to build) against the vision spec
 - [ ] Vision spec: auth + per-company isolation, saved smart reports reopenable after refresh, export, audit log, learning from outcomes — after Cloud
 - [x] Merged report-insight-engine: universal pipeline engine + persisted analyses/decisions/tasks screens (tables + tests ported); sibling Lovable projects unreachable (different workspace) — user must export/share them (21d9257a "Remix of Unified Foundation Project", 358c175b "Report Advisor") and github.com/Report-Engainall/report-insight-engine — import only what this project lacks
+- [x] Moved backend to this project's Lovable Cloud (128 tables), email sign-in on; verified sign-in → company creation → all 46 screens → upload → approve → smart report
