@@ -1,4 +1,7 @@
 # Report-Advisor migration roadmap
+- [ ] Repair real workbook field interpretation and Arabic PDF extraction using the attached files.
+- [ ] Replace the smart report's repetitive first screen with a merchant decision workspace: priorities, scenarios, tasks, and source evidence.
+- [ ] Validate uploaded-file analysis and report navigation on desktop/mobile; record unsupported or unverified flows honestly.
 - [x] Continue completion: repair context-preserving decision/work/outcome links and verify authenticated readback.
 - [x] Cover the secondary analysis screen too: analyze every workbook sheet without mixing unrelated totals; expose sheet selection and saved results.
 - [x] Make task completion failures visible and retain outcome input until saving succeeds.
