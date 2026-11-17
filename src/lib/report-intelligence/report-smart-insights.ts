@@ -418,14 +418,14 @@ function deriveSignals(report: ReportInput): ReportSignal[] {
       for (const row of rows) {
         const stock = numeric(rowValue(row.data, stockKey));
         if (stock == null) continue;
-        totalStock += stock;
+        totalStock += Math.max(0, stock);
         const productName = text(rowValue(row.data, productNameKey)) || text(rowValue(row.data, skuKey)) || 'صنف غير مسمى';
         const rowRef = row.row_number == null ? '' : 'الصف=' + row.row_number + ' · ';
         if (stock < 0) {
           negativeStockRows += 1;
           if (negativeStockSamples.length < 5) negativeStockSamples.push(rowRef + productName + ' · الرصيد=' + stock);
         }
-        if (stock <= 0) zeroStockRows += 1;
+        if (stock === 0) zeroStockRows += 1;
 
         const dailyRate = dailyRateKey ? numeric(rowValue(row.data, dailyRateKey)) : null;
         const netSales = netSalesKey ? numeric(rowValue(row.data, netSalesKey)) : null;
@@ -441,14 +441,8 @@ function deriveSignals(report: ReportInput): ReportSignal[] {
         } else if (dailyRate != null && dailyRate > 0) {
           coverageDays = stock / dailyRate;
           coverageBasis = 'stockField=' + stockKey + ' dailySalesField=' + dailyRateKey;
-        } else if (netSales != null && netSales > 0) {
-          // Some operational inventory sheets expose demand only as sales quantity
-          // per source row. Treat this strictly as a row-level coverage proxy, not
-          // as calendar days; the recommendation remains gated by lead-time data.
-          coverageDays = stock / netSales;
-          coverageBasis = 'stockField=' + stockKey + ' salesField=' + netSalesKey + ' coverageMode=source_row_demand_proxy';
         }
-        if (coverageDays != null && Number.isFinite(coverageDays) && coverageDays >= 0 && coverageDays <= 30) {
+        if (stock > 0 && coverageDays != null && Number.isFinite(coverageDays) && coverageDays > 0 && coverageDays <= 30) {
           lowCoverageRows.push({ name: productName, stock, demand: dailyRate ?? salesForCoverage, sales: salesForCoverage, coverageDays, basis: coverageBasis });
         }
         if (dateKey && salesForCoverage != null && salesForCoverage > 0) {
@@ -459,11 +453,11 @@ function deriveSignals(report: ReportInput): ReportSignal[] {
           totalDailyRate += dailyRate;
           dailyRateRows += 1;
           fastMovingProducts.push({ name: productName, rate: dailyRate });
-          if (stock <= 0) {
+          if (stock === 0) {
             zeroStockWithSalesRows += 1;
             if (stockoutSamples.length < 5) stockoutSamples.push(rowRef + productName + ' · الرصيد=' + stock + ' · معدل البيع اليومي=' + dailyRate);
           }
-        } else if (netSales != null && netSales > 0 && stock <= 0) {
+        } else if (netSales != null && netSales > 0 && stock === 0) {
           zeroStockWithSalesRows += 1;
           if (stockoutSamples.length < 5) stockoutSamples.push(rowRef + productName + ' · الرصيد=' + stock + ' · صافي المبيعات=' + netSales);
         }
@@ -471,15 +465,15 @@ function deriveSignals(report: ReportInput): ReportSignal[] {
         const stockoutDays = stockoutDaysKey ? numeric(rowValue(row.data, stockoutDaysKey)) : null;
         if (stockoutDays != null && Number.isFinite(stockoutDays)) {
           knownStockoutRows += 1;
-          if (stockoutDays >= 0 && stockoutDays <= 30 && (dailyRate == null || dailyRate > 0 || stock <= 0)) stockoutWithin30Rows += 1;
-          if (stockoutDays >= 0 && stockoutDays <= 7 && (dailyRate == null || dailyRate > 0 || stock <= 0)) stockoutWithin7Rows += 1;
-          if (stockoutDays >= 0 && stockoutDays <= 30) urgentProducts.push({ name: productName, days: stockoutDays, stock });
+          if (stock > 0 && stockoutDays > 0 && stockoutDays <= 30 && (dailyRate == null || dailyRate > 0)) stockoutWithin30Rows += 1;
+          if (stock > 0 && stockoutDays > 0 && stockoutDays <= 7 && (dailyRate == null || dailyRate > 0)) stockoutWithin7Rows += 1;
+          if (stock > 0 && stockoutDays > 0 && stockoutDays <= 30) urgentProducts.push({ name: productName, days: stockoutDays, stock });
         }
 
         const age = stockAgePeriodKey ? numeric(rowValue(row.data, stockAgePeriodKey)) : (stockAgeKey ? numeric(rowValue(row.data, stockAgeKey)) : null);
         if (age != null) {
           knownAgeRows += 1;
-          if (age >= 180 && (dailyRate == null || dailyRate <= 1)) oldStockRows += 1;
+          if (stock > 0 && age >= 180 && (dailyRate == null || dailyRate <= 1)) oldStockRows += 1;
         }
 
         if (netSalesKey) {

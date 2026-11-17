@@ -17,7 +17,9 @@ function buildColumnProfiles(rows: Row[], columns: string[], mappings: Awaited<R
   const numericFields = new Set([
     'balance','credit','debit','amount','total','net_amount','gross_amount','subtotal',
     'tax','tax_amount','discount','paid_amount','price','unit_price','cost','cost_price',
-    'selling_price','quantity','stock','reorder_point','min_stock',
+    'selling_price','quantity','stock','reorder_point','min_stock','current_stock','opening_stock',
+    'incoming','net_inbound','sales_qty','posted_sales_qty','unposted_sales_qty','daily_sales_rate',
+    'annual_sales_rate','stockout_days','stock_age_days','stock_age_period_days','transfers_pending','pack_size','invoice_amount','burden_amount',
   ]);
   const dateFields = new Set(['date','invoice_date','document_date','due_date','payment_date']);
   const textFields = new Set([

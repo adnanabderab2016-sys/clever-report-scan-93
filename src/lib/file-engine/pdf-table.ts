@@ -55,7 +55,7 @@ function groupVisualLines(items: PdfTextToken[]): PdfTextToken[][] {
 
   const lines: Array<{ y: number; tokens: PdfTextToken[] }> = [];
   const heights = usable.map((item) => Math.max(1, item.height)).filter(Number.isFinite);
-  const yTolerance = Math.max(2.5, median(heights) * 0.55);
+  const yTolerance = Math.max(3.5, median(heights) * 0.55);
 
   for (const item of usable) {
     const line = lines.find((candidate) => Math.abs(candidate.y - item.y) <= yTolerance);
@@ -116,7 +116,7 @@ function groupVisualLinesInSourceOrder(items: PdfTextToken[]): PdfTextToken[][] 
   const usable = items.filter((item) => item.text.trim());
   const lines: Array<{ y: number; tokens: PdfTextToken[] }> = [];
   const heights = usable.map((item) => Math.max(1, item.height)).filter(Number.isFinite);
-  const yTolerance = Math.max(2.5, median(heights) * 0.55);
+  const yTolerance = Math.max(3.5, median(heights) * 0.55);
 
   for (const item of usable) {
     const line = lines.find((candidate) => Math.abs(candidate.y - item.y) <= yTolerance);
@@ -255,8 +255,8 @@ function scaledArabicSalesBands(pageWidth: number): Array<[number, number]> {
 }
 
 function findArabicSalesHeader(page: PdfPageText): boolean {
-  const topTokens = page.items.filter((token) => token.y < 150);
-  const text = topTokens.map((token) => token.text).join(' ');
+  // PDF.js coordinates start at the bottom. Detect by meaning, not an inverted top margin.
+  const text = page.items.map((token) => token.text.normalize('NFKC')).join(' ');
   const requiredHints = ['الفاتورة', 'التاريخ', 'العميل', 'العملة', 'مبلغ', 'الخصم', 'الضريبة'];
   return requiredHints.filter((hint) => text.includes(hint)).length >= 5;
 }
@@ -271,7 +271,7 @@ function extractArabicSalesTableFromPage(
   for (const tokens of lines) {
     if (!tokens.length) continue;
     const lineY = median(tokens.map((token) => token.y));
-    if (lineY < (findArabicSalesHeader(page) ? 130 : 20) || lineY > Math.max(540, (page.pageHeight ?? 595) - 35)) continue;
+    if (lineY < 30 || lineY > (page.pageHeight ?? 595) - 35) continue;
 
     const cells: PdfTextToken[][] = Array.from({ length: bands.length }, () => []);
     for (const token of tokens) {

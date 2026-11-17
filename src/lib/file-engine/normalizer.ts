@@ -87,7 +87,8 @@ export function parseNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
 
-  const original = normalizeArabicDigits(String(value)).trim();
+  const original = normalizeArabicDigits(String(value)).trim().replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, '');
+  const accountingNegative = /^\(.*\)$/.test(original) || /\d\s*-$/.test(original);
   const currencyWords = /(?:ريال|ريال?يمني|ر\.س|ر\.ي|sar|yer|usd|eur|gbp|aed|دينار|درهم|جنيه|دولار|يورو|جنيه\s+إسترليني)/giu;
   const numericCandidate = original.replace(currencyWords, '');
   if (/\p{L}/u.test(numericCandidate)) return null;
@@ -122,7 +123,7 @@ export function parseNumber(value: unknown): number | null {
   }
 
   const number = Number(normalized);
-  return Number.isFinite(number) ? number : null;
+  return Number.isFinite(number) ? (accountingNegative ? -Math.abs(Number(normalized.replace(/-$/, ''))) : number) : null;
 }
 
 export function parseCurrency(value: unknown): number | null {
