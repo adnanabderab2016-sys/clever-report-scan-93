@@ -82,3 +82,23 @@ export function salesAdvice(rows: BusinessRow[]) {
     customers:[...g.customers].map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value),
     months:[...g.months].map(([period,value])=>({period,value})).sort((a,b)=>a.period.localeCompare(b.period))}))};
 }
+
+export function salesActionPlan(result: ReturnType<typeof salesAdvice>) {
+  return result.groups.flatMap(group => {
+    const top = group.customers[0];
+    const plan = [];
+    if (top && group.total > 0) plan.push({id:'customer-'+group.currency,title:'حماية كبار العملاء وتنويع المبيعات',
+      action:`تواصل مع ${top.name} لتأكيد الطلبات المقبلة، وقارن نشاط بقية العملاء قبل تحديد هدف تنويع.`,
+      why:`أكبر عميل يمثل ${(top.value/group.total*100).toFixed(1)}% من صافي ${group.currency} (${top.value.toLocaleString('ar')}).`,
+      ownerHint:'مسؤول المبيعات',measurement:'حصة أكبر عميل واستمرار طلباته',limitation:'الأسماء غير الموحدة قد تمثل العميل نفسه؛ ليست توقعاً لفقدانه.'});
+    if (group.credit > 0) plan.push({id:'credit-'+group.currency,title:'مطابقة البيع الآجل مع التحصيل',
+      action:'اطلب كشف أرصدة العملاء وإيصالات التحصيل وأعمار الديون؛ طابقها بالفواتير قبل المطالبة بالسداد.',
+      why:`البيع الآجل الظاهر ${group.credit.toLocaleString('ar')} ${group.currency}؛ لا يثبت المبلغ المتبقي على العملاء.`,
+      ownerHint:'المحاسب ومسؤول التحصيل',measurement:'الرصيد المستحق المؤكد بعد المطابقة',limitation:'لا توجد بيانات سداد أو آجال استحقاق في الفواتير وحدها.'});
+    if (group.months.length > 1) plan.push({id:'period-'+group.currency,title:'مراجعة تغير المبيعات قبل تحديد الهدف القادم',
+      action:'قارن الأشهر المكتملة حسب العميل ونوع الفاتورة، وراجع الأسباب التشغيلية لأي تغير؛ استبعد الشهر الأخير إن كان جزئياً.',
+      why:`المصدر يعرض ${group.months.length} أشهر بقيمة ${group.currency}؛ اختلاف اكتمال الأشهر قد يشوه المقارنة.`,
+      ownerHint:'مدير المبيعات',measurement:'مبيعات شهر مكتمل مقابل شهر مكتمل وحصة كل عميل',limitation:'دورة واحدة لا تكفي لإثبات الموسمية أو توقع موثوق.'});
+    return plan;
+  });
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inventoryAdvice, salesAdvice, suggestedOrder } from '@/lib/report-intelligence/merchant-advisor';
+import { inventoryAdvice, salesAdvice, salesActionPlan, suggestedOrder } from '@/lib/report-intelligence/merchant-advisor';
 import { parseNumber } from '@/lib/file-engine/normalizer';
 import { mapColumns } from '@/lib/file-engine/synonyms';
 
@@ -33,5 +33,10 @@ describe('source-bound merchant advice',()=>{
   it('maps workbook headers without collapsing posted and net sales',async()=>{
     const m=await mapColumns(['صافي\nمبيعات مرحل','صافي مبيعات\nلم يرحل','صافي المبيعات','الفترةالمتوقعة\nلنفادالكمية','العبوه']);
     expect(m.map(c=>c.mappedField)).toEqual(['posted_sales_qty','unposted_sales_qty','sales_qty','stockout_days','pack_size']);
+  });
+  it('only produces invoice actions supported by customer, credit or period evidence',()=>{
+    expect(salesActionPlan(salesAdvice([]))).toEqual([]);
+    expect(salesActionPlan(salesAdvice([{customer_name:'أ',total:100,currency:'YER',invoice_type:'نقد'}])).map(p=>p.id)).toEqual(['customer-YER']);
+    expect(salesActionPlan(salesAdvice([{customer_name:'أ',net_local:100,invoice_type:'آجل',date:'2026-01-01'},{customer_name:'ب',net_local:50,date:'2026-02-01'}]))).toHaveLength(3);
   });
 });

@@ -122,8 +122,8 @@ export function parseNumber(value: unknown): number | null {
     normalized = normalized.replace(/\./g, '');
   }
 
-  const number = Number(normalized);
-  return Number.isFinite(number) ? (accountingNegative ? -Math.abs(Number(normalized.replace(/-$/, ''))) : number) : null;
+  const number = Number(accountingNegative ? normalized.replace(/-$/, '') : normalized);
+  return Number.isFinite(number) ? (accountingNegative ? -Math.abs(number) : number) : null;
 }
 
 export function parseCurrency(value: unknown): number | null {
