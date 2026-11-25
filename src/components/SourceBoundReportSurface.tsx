@@ -8,6 +8,7 @@ import { ReportIntelligencePanel } from '@/components/ReportIntelligencePanel';
 import { completeSourceDecisionWorkItem, createApprovedDecisionWorkItemForCurrentUser, decideSourceDecisionApproval, fetchSourceDecisionAuditTrace, fetchSourceDecisionProposals, requestSourceDecisionApproval, startSourceDecisionWorkItem, type DecisionAuditTrace, type SourceDecisionState } from '@/lib/report-decisions';
 import { getAuthenticatedUser } from '@/lib/auth-session';
 import { reportJourneyLink, reportWorkLink } from '@/lib/report-journey-links';
+import { parseNumber } from '@/lib/file-engine/normalizer';
 
 export type SourceBoundReportMode = 'executive' | 'trust' | 'decision' | 'work';
 
@@ -709,14 +710,18 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [auditTrace, setAuditTrace] = useState<DecisionAuditTrace[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
 
   const refreshDecisions = useCallback(async () => {
     const rows = await fetchSourceDecisionProposals(report.sourceHash, report.jobId);
     setDecisions(rows);
+    setReadError(null);
   }, [report.jobId, report.sourceHash]);
 
   const refreshAudit = useCallback(async (decision: SourceDecisionState) => {
     setAuditLoading(true);
+    setAuditError(null);
     try {
       const rows = await fetchSourceDecisionAuditTrace(
         decision.id,
@@ -727,6 +732,7 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
       setAuditTrace(rows);
     } catch {
       setAuditTrace([]);
+      setAuditError('تعذر قراءة سجل التتبع؛ لا يعني ذلك عدم وجود سجل محفوظ.');
     } finally {
       setAuditLoading(false);
     }
@@ -735,7 +741,7 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
   useEffect(() => {
     let active = true;
     void refreshDecisions().catch(() => {
-      if (active) setDecisions([]);
+      if (active) setReadError('تعذر تحميل القرارات المحفوظة. أعد المحاولة قبل إنشاء قرار آخر.');
     });
     void getAuthenticatedUser().then((user) => {
       if (active) setCurrentUserId(user?.id ?? null);
@@ -771,7 +777,7 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
       signalMessage: decision.signalMessage,
       signalSeverity: decision.signalSeverity,
       recommendationId: decision.recommendationId,
-      evidenceSnapshotId: report.sourceAnalysis?.id ?? null,
+      evidenceSnapshotId: evidenceSnapshotId || null,
       department,
       dueAt: workDueAt[decision.id] ? new Date(workDueAt[decision.id]).toISOString() : null,
     }).then((workItemId) => {
@@ -801,8 +807,8 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
       return;
     }
     const rawImpact = actualImpact[decision.id]?.trim() ?? '';
-    const parsedImpact = rawImpact ? Number(rawImpact.replace(/,/g, '')) : null;
-    if (parsedImpact != null && !Number.isFinite(parsedImpact)) {
+    const parsedImpact = rawImpact ? parseNumber(rawImpact) : null;
+    if (rawImpact && parsedImpact === null) {
       setDecisionAction((current) => ({ ...current, [decision.id]: 'impact-error' }));
       return;
     }
@@ -816,6 +822,7 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
     }).then(() => {
       setDecisionAction((current) => ({ ...current, [decision.id]: 'work-completed' }));
       setDecisions((current) => current.map((item) => item.id === decision.id ? { ...item, workItemStatus: 'COMPLETED', status: 'EXECUTED' } : item));
+      void refreshDecisions().catch(() => setReadError('حُفظ الإغلاق، لكن تعذر تحديث النتيجة؛ أعد تحميل القرارات.'));
     }).catch(() => {
       setDecisionAction((current) => ({ ...current, [decision.id]: 'complete-error' }));
     });
@@ -864,6 +871,8 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
       </section>
       <BusinessJourneyRail report={report} output={output} decision={decisions[0] ?? null} />
       <ReportIntelligencePanel report={report} />
+      {readError && <ErrorState message={readError} onRetry={() => void refreshDecisions().catch(() => setReadError('تعذر تحميل القرارات المحفوظة. أعد المحاولة.'))}/>}
+      {auditError && <p role="alert" className="text-sm text-muted-foreground">{auditError}</p>}
 
       {decisions[0] && <ContinuationRail report={report} decision={decisions[0]} />}
 
@@ -878,7 +887,7 @@ function DecisionMode({ report }: { report: SmartReportDetail }) {
         </div>
 
         <div className="mt-4 space-y-3">
-          {decisions.length ? decisions.map((decision) => (
+          {readError ? null : decisions.length ? decisions.map((decision) => (
             <article key={decision.id} className="rounded-xl border border-ink-200 bg-ink-50/70 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">

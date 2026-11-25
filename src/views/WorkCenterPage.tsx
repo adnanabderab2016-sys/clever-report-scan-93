@@ -11,6 +11,7 @@ import { loadPersistedOutcomes, type DecisionOutcome } from '@/lib/analytics/out
 import { resolveCurrentCompanyId } from '@/lib/supabase';
 import type { ImportRecord } from '@/lib/types';
 import { formatNumber } from '@/lib/format';
+import { parseNumber } from '@/lib/file-engine/normalizer';
 
 type FilterKey = 'all' | 'active' | 'review' | 'completed' | 'failed';
 type DecisionWorkFilter = 'all' | 'open' | 'in_progress' | 'completed' | 'overdue';
@@ -93,8 +94,8 @@ function WorkCenterGeneralPage() {
       return;
     }
     const rawImpact = workImpacts[item.id]?.trim() ?? '';
-    const parsedImpact = rawImpact ? Number(rawImpact.replace(/,/g, '')) : null;
-    if (parsedImpact != null && !Number.isFinite(parsedImpact)) {
+    const parsedImpact = rawImpact ? parseNumber(rawImpact) : null;
+    if (rawImpact && parsedImpact === null) {
       setWorkActions((current) => ({ ...current, [item.id]: 'error' }));
       return;
     }

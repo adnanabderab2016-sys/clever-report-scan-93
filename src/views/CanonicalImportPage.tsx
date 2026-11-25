@@ -16,6 +16,7 @@ import { reconcileForCanonical } from '@/lib/import/canonical-truth-boundary';
 import { runCanonicalImportThroughDurableRunner } from '@/lib/import/canonical-production-adapter';
 import { combineSourceDatasets } from '@/lib/file-engine/full-source';
 import { SourceValueBrief } from '@/components/SourceValueBrief';
+import { importQualityReadiness } from '@/lib/import/quality-readiness';
 
 type Step = 'upload' | 'scanning' | 'preview' | 'saving' | 'done';
 interface Row { rowNumber: number; data: Record<string, any>; valid: boolean; error?: string }
@@ -213,7 +214,7 @@ export function CanonicalImportPage() {
       setSourceDatasets(datasets);
       if (!dataset || dataset.rowCount === 0) throw new Error('الملف فارغ أو لا يحتوي على بيانات قابلة للقراءة');
       const analyticalReportQuality = deriveAnalyticalReportQuality(dataset, detection.format, selected.name);
-      const effectiveQuality = Math.max(Number(dataset.qualityScore) || 0, analyticalReportQuality);
+      const effectiveQuality = importQualityReadiness(Number(dataset.qualityScore), false).quality;
       setQuality(effectiveQuality);
       setMappings(dataset.columns.map(c => ({ name: c.name, mappedField: c.mappedField, confidence: c.mappingConfidence })));
       const hdrs = dataset.columns.map(c => c.name);
@@ -221,7 +222,7 @@ export function CanonicalImportPage() {
       const understanding = analyzeSourceUnderstanding(dataset);
       setUnderstandingConfidence(understanding.confidence);
       setUnderstandingReason(analyticalReportQuality > Number(dataset.qualityScore || 0)
-        ? 'المصدر يحمل شكل تقرير تحليلي قابل للقراءة: عدد صفوف كافٍ، بنية جدوليّة ومؤشرات عددية واضحة. هذا يرفع جودة التحليل دون اختلاق مطابقة كانونية للحقول.'
+        ? 'المصدر قابل للقراءة والتحليل، لكن ذلك لا يرفع جودة البيانات ولا يلغي مراجعة الحقول والمخالفات.'
         : understanding.reason);
       setRows(dataset.rows.map((data, i) => ({ rowNumber: i + 1, data, valid: true })));
       setStep('preview');
@@ -274,8 +275,9 @@ export function CanonicalImportPage() {
   const saveAnalysis = useCallback(async () => {
     const validRows = rows.filter(r => r.valid);
     if (!validRows.length || !file || !fileHash || duplicate || !securityPassed) return;
-    if (quality < 50) { setError('جودة البيانات أقل من 50% — الاستيراد مرفوض.'); return; }
-    if (quality < 75 && !qualityApproved) { setError('جودة البيانات بين 50% و74% وتتطلب موافقة صريحة قبل الاعتماد.'); return; }
+    const readiness = importQualityReadiness(quality, qualityApproved);
+    if (readiness.rejected) { setError('جودة البيانات أقل من 50% — الاستيراد مرفوض.'); return; }
+    if (!readiness.ready) { setError('جودة البيانات بين 50% و74% وتتطلب موافقة صريحة قبل الاعتماد.'); return; }
 
     setStep('saving');
     setProgress(10);
@@ -430,7 +432,7 @@ export function CanonicalImportPage() {
   const invalid = rows.length - valid;
   const mappingCoverage = useMemo(() => mappings.length ? Math.round((mappings.filter(m => m.mappedField).length / mappings.length) * 100) : 0, [mappings]);
   const qualityVariant = quality >= 75 ? 'success' : quality >= 50 ? 'warning' : 'danger';
-  const ready = Boolean(file && fileHash && securityPassed && !duplicate && valid > 0 && (quality >= 75 || (quality >= 50 && quality < 75 && qualityApproved)));
+  const ready = Boolean(file && fileHash && securityPassed && !duplicate && valid > 0 && importQualityReadiness(quality, qualityApproved).ready);
   const failurePresentation = describeImportFailure(error);
 
   return <div className="space-y-5 animate-fade-in">

@@ -21,3 +21,4 @@
 - Saved secondary analyses query only after the browser session hydrates, with user-scoped cache keys; SSR cannot read browser sessions and must not turn refreshes into false 404s.
 - Import approval re-reads stored bytes and records the raw SHA-256 proof before commit; durable execution uses the verified user's client so tenant permissions remain enforced.
 - The smart-report merchant workspace uses pure source-scoped advisory functions; zero/negative/future stockouts are disjoint, incompatible units and currencies stay separate, and scenario quantities never imply automatic purchasing.
+- Import preview uses measured dataset quality and shared readiness thresholds, never readability-based score boosts; this keeps review consent visible before durable validation.

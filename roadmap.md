@@ -1,4 +1,6 @@
 # Report-Advisor migration roadmap
+- [ ] Product readiness: exercise a signed-in report → source decision → approval → work → outcome flow and repair failures.
+- [ ] Product readiness: run the existing specification suites and verify desktop/mobile rendering and safety checks.
 - [x] Repair real workbook field interpretation and Arabic PDF extraction using the attached files; the signed-in PDF import retained 6,558 invoice rows across 216 pages. Independent full-source reconciliation remains unverified.
 - [x] Replace the smart report's repetitive first screen with a merchant decision workspace: priorities, scenarios, suggested tasks, and source evidence.
 - [x] Validate real-file upload, approval, saved report readback, scenario changes and plan export; mobile DOM has no horizontal overflow. Final mobile screenshot inspection and the complete decision-to-outcome journey remain unverified.
